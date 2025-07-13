@@ -170,4 +170,20 @@ function acceptTask(taskId) {
   localStorage.setItem("tasks", JSON.stringify(tasks));
   renderTasks();
 }
+fetch("tasks.json")
+  .then(res => res.json())
+  .then(data => {
+    const container = document.getElementById("taskList");
+    container.innerHTML = "";
+    data.forEach(task => {
+      const div = document.createElement("div");
+      div.innerHTML = `
+        <p><strong>Görev:</strong> ${task.content}</p>
+        <p><strong>Sahip:</strong> ${task.owner}</p>
+        <a href="${task.file}" download>Dosyayı İndir</a>
+        <hr>
+      `;
+      container.appendChild(div);
+    });
+  });
 
