@@ -152,4 +152,22 @@ dropZone.addEventListener("drop", function(e) {
   }, 2000);
 });
 let tasks = JSON.parse(localStorage.getItem("tasks")) || [], coins = parseInt(localStorage.getItem("coins")) || 0, selectedTask = null; document.getElementById("coins").innerText = coins;
+function acceptTask(taskId) {
+  const task = tasks.find(t => t.id === taskId);
+  if (!task || !task.file) return;
+
+  // Dosyayı indirme linki oluştur
+  const downloadLink = document.createElement("a");
+  downloadLink.href = task.file; // Bu Object URL veya gerçek dosya linki olabilir
+  downloadLink.download = task.fileName || "tasarim.obj"; // Dosya adı
+  downloadLink.style.display = "none";
+  document.body.appendChild(downloadLink);
+  downloadLink.click();
+  document.body.removeChild(downloadLink);
+
+  // Görev durumunu güncelle (isteğe bağlı)
+  task.accepted = true;
+  localStorage.setItem("tasks", JSON.stringify(tasks));
+  renderTasks();
+}
 
