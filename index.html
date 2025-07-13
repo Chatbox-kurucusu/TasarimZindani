@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Görev Karşıla Sistemi</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #dde9f2, #f6fbff);
+      margin: 0;
+      padding: 20px;
+    }
+
+    h2 {
+      text-align: center;
+      color: #2a3f55;
+    }
+
+    .container {
+      display: flex;
+      gap: 30px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .section {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      width: 300px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+      transition: transform 0.2s ease;
+    }
+
+    .section:hover {
+      transform: translateY(-5px);
+    }
+
+    .task {
+      background: #f8f9fc;
+      border: 1px solid #d0d9e0;
+      padding: 15px;
+      margin-top: 15px;
+      border-radius: 8px;
+      transition: box-shadow 0.2s ease;
+    }
+
+    .task:hover {
+      box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+    }
+
+    input[type="text"], textarea {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      border: 1px solid #cbd3dc;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    .btn {
+      background: #367cff;
+      color: white;
+      padding: 8px 14px;
+      border: none;
+      border-radius: 6px;
+      margin-top: 10px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background 0.2s ease;
+    }
+
+    .btn:hover {
+      background: #255ec3;
+    }
+
+    #uploadBox {
+      display: none;
+      margin-top: 15px;
+    }
+
+    #dropZone {
+      border: 2px dashed #aaa;
+      padding: 30px;
+      text-align: center;
+      border-radius: 8px;
+      background: #f4f7fa;
+    }
+  </style>
+</head>
+<body>
+
+<h2>🤝 Dijital Görev Sistemi</h2>
+<p><strong>Coin:</strong> <span id="coins">0</span></p>
+
+<div class="container">
+  <!-- İhtiyaç Yaz -->
+  <div class="section">
+    <h3>✍️ İhtiyacını Yaz</h3>
+    <input type="text" id="taskInput" placeholder="Örn: ejderha stant tasarımı" />
+    <button class="btn" onclick="addTask()">İstek Gönder</button>
+  </div>
+
+  <!-- Görev Listesi -->
+  <div class="section">
+    <h3>📄 Başkalarının Görevleri</h3>
+    <div id="taskList"></div>
+  </div>
+
+  <!-- Dosya Yükleme Alanı -->
+  <div class="section">
+    <h3>📁 Tasarımını Gönder</h3>
+    <div id="uploadBox">
+      <div id="dropZone">Dosyanı buraya bırak</div>
+      <p id="fileStatus" style="color: green;"></p>
+    </div>
+  </div>
+</div>
+
+<script>
+let coins = parseInt(localStorage.getItem("coins")) || 0;
+let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+let selectedTask = null;
+document.getElementById("coins").innerText = coins;
+
+// Görev ekleme
+function addTask() {
+  const input = document.getElementById("taskInput").value.trim();
+  if (!input) return;
+  const newTask = {
+    id: Date.now(),
+    content: input,
+    responded: false,
+    response: null
+  };
+  tasks.push(newTask);
+  localStorage.setItem("tasks", JSON.stringify(tasks));
+  renderTasks();
+  document.getElementById("taskInput").value = '';
+}
+
+// Görev listeleme
+function renderTasks() {
+  const list = document.getElementById("taskList");
+  list.innerHTML = '';
+  tasks.forEach(task => {
+    const taskEl = document.createElement("div");
+    taskEl.className = "task";
+    taskEl.innerHTML = `
+      <p><strong>İstek:</strong> ${task.content}</p>
+      ${task.responded ? `
+        <p><strong>Yanıt:</strong> <a href="${task.response}" target="_blank">${task.response}</a></p>
+        <button class="btn" onclick="confirmResponse(${task.id})">✅ Onayla</button>
+        <button class="btn" onclick="rejectResponse(${task.id})">❌ Reddet</button>
+      ` : `
+        <button class="btn" onclick="selectTask(${task.id})">Karşıla</button>
+      `}
+    `;
+    list.appendChild(taskEl);
+  });
+}
+
+// Görev seçimi
+function selectTask(id) {
+  selectedTask = id;
+  document.getElementById("uploadBox").style.display = "block";
+  document.getElementById("uploadBox").scrollIntoView({ behavior: "smooth" });
+}
+
+// Dosya sürükle–bırak
+const dropZone = document.getElementById("dropZone");
+dropZone.addEventListener("dragover", e => {
+  e.preventDefault();
+  dropZone.style.background = "#e0f7ff";
+});
+dropZone.addEventListener("dragleave", e => {
+  dropZone.style.background = "#f4f7fa";
+});
+dropZone.addEventListener("drop", e => {
+  e.preventDefault();
+  dropZone.style.background = "#f4f7fa";
+
+  const file = e.dataTransfer.files[0];
+  if (!file) return;
+
+  // Geçici dosya bağlantısı oluştur
+  const fileURL = URL.createObjectURL(file);
+
+  const task = tasks.find(t => t.id === selectedTask);
+  if (task) {
+    task.response = fileURL;
+    task.responded = true;
+    localStorage.setItem("tasks", JSON.stringify(tasks));
+    document.getElementById("fileStatus").innerText = `✔️ ${file.name} eklendi!`;
+    renderTasks();
+    selectedTask = null;
+
+    // Yükleme kutusunu gizle
+    setTimeout(() => {
+      document.getElementById("uploadBox").style.display = "none";
+      document.getElementById("fileStatus").innerText = "";
+    }, 1500);
+  }
+});
+
+// Görev onayla → coin kazan + sil
+function confirmResponse(id) {
+  coins += 10;
+  localStorage.setItem("coins", coins);
+  document.getElementById("coins").innerText = coins;
+  tasks = tasks.filter(task => task.id !== id);
+  localStorage.setItem("tasks", JSON.stringify(tasks));
+  alert("✅ Tasarım onaylandı, 10 coin kazandın!");
+  renderTasks();
+}
+
+// Reddet → yanıtı sil
+function rejectResponse(id) {
+  tasks = tasks.map(task => {
+    if (task.id === id) {
+      task.responded = false;
+      task.response = null;
+    }
+    return task;
+  });
+  localStorage.setItem("tasks", JSON.stringify(tasks));
+  renderTasks();
+  alert("❌ Yanıt reddedildi!");
+}
+
+// Başlangıçta görevleri yükle
+window.onload = () => {
+  renderTasks();
+};
+</script>
+
+</body>
+</html>
